@@ -1,0 +1,297 @@
+---
+title: "Project - Analysis of Heart Disease"
+---
+## Introduction
+
+* Analysis of heart disease is very vital according to the upcoming generation. Disease are rising much more and are by threatened by lives. So, the purpose of choosing this dataset is to predict the rate of heart disease based on cholesterol and other factors that are described in details further and also to check whether risk of heart failure depended on any gender or not.
+
+## Executive Summary 
+
+* Divided by gender that is male and female who are most likely to get heart attack and based on age too. The investigation further explains and solves the latter problem.
+
+* There are various attributes that are used to investigate the above problem. Histogram and boxplot is used to understand better. Various tests are used to investigate more clearly.
+
+* Hypothesis Test is carried out to find the relation between gender and risk of heart failure.
+
+* Linear Regression testing is also carried in this investigation to check the accuracy level of the application
+
+* The purpose of this investigation is mainly depended on the male and female who has most likely to have heart attack or a heart disease according to their age.
+
+## Part1 : Data Preparation
+
+### Loading Packages
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r results = 'hide', warning=FALSE, message=FALSE, error=FALSE}
+library(MASS)
+library(MLmetrics)
+library(ISLR)
+library(readr)
+library(dplyr)
+library(car)
+library(lattice)
+library(ggplot2)
+library(tidyverse)
+library(hexbin)
+options(scipen=2)
+```
+
+### Exploring Dataset
+
+```{r}
+Heart_Data <- read.csv("D:/Foram/Others/Illinois Drive Sem III/ProgCyberAnalytics/heart.csv")
+#View(Heart_Data)
+str(Heart_Data)
+```
+
+### Summary of Heart Disease Dataset
+
+```{r}
+summary(Heart_Data)
+```
+
+### Data observations and variables
+
+* There are total 918 observations with 12 variables. Each of them are explained below.
+  * Age - Age of the people
+  * Sex - Gender (male indicated by 0 and female indicated by 1)
+  * Chest Pain Type :
+      * Value 1: Typical Angina (TA)
+      * Value 2: Atypical Angina (ATA)
+      * Value 3: Non-Anginal pain (NAP)
+      * Value 4: Asymptomatic (ASY)
+  * RestingBP - Blood pressure of the patient while entering hospital
+  * Cholesterol - Serum cholesterol in mg/dl
+  * FastingBS - Fasting blood sugar > 120 mg/dl (1 = true; 0 = false)
+  * RestingECG - Resting electrocardiographic results
+      * Value 1: Normal
+      * Value 2: Abmornal
+      * Value 3: Probable or Definite Left Ventricular Hypertrophy
+  * MaxHR - Maximum Heart Rate
+  * ExerciseAngina - Exercise Angina 0 for FALSE and 1 for TRUE
+  * Oldpeak - ST (Stress Test) Depression by exercise wrt rest 
+  * ST_Slope - ST Slope of peak 1 for up sloping 2 for flat 3 for down sloping
+  * HeartDisease - Final target 0 for FALSE 1 for TRUE
+  
+
+### Missing values
+
+```{r}
+sum(is.na(Heart_Data))
+```
+> There are no missing values
+
+## Part 2: Data Exploration
+
+### Data Visualization
+
+ * To check the risk of heart failure according to gender and age, we created a histogram to see which gender of that age is most likely to have the heart failure.
+
+
+```{r}
+#Renaming Labels
+Gender <- Heart_Data$Sex %>% factor(levels=c(0,1),
+                                  labels=c("Male","Female"))
+```
+
+```{r}
+#Renaming Labels
+Chances_of_Heart_Failure <- Heart_Data$HeartDisease %>% factor(levels=c(0,1),
+                                        labels=c(FALSE,TRUE))
+histogram(~Chances_of_Heart_Failure | Gender, data= Heart_Data, main = "Risk of Heart Disease wrt gender" ,col="red")
+```
+
+
+
+> Result : So as per our analysis, chances of heart failure in male is more than female as seen in the above graph of Heart dataset
+
+```{r}
+histogram(~Age | Gender, data= Heart_Data, main = "According to Age", breaks=10, col="red")
+```
+
+
+
+> Result : So as per our analysis, chances of heart failure in male and female most likely to happen between age 50 and 60.
+
+* To check the risk of heart failure according to gender and age, we created a boxplot to easily identify the relation between age and gender that is more elaborated from the above histogram
+
+```{r}
+boxplot(Heart_Data$Age ~ Gender, data = Heart_Data, col="red")
+```
+
+
+
+
+> Result : So as per our analysis, it shows the same result in a different way to elaborate histogram
+
+## Part 3 : Data Analysis
+
+### (A) Hypothesis Testing 
+
+* To check where there is association between gender and risk of heart failure we need to do hypothtesis testing 
+
+```{r}
+summary(Heart_Data$Sex)
+summary(Heart_Data$HeartDisease)
+
+var(Heart_Data$Sex)
+var(Heart_Data$HeartDisease)
+```
+
+  * H0: Gender and Heart failure are related
+  * H1: Gender and Heart failure aren't related
+  
+    
+  
+```{r}
+vartestResult <- var.test(Heart_Data$Sex,Heart_Data$HeartDisease)
+vartestResult
+```
+
+
+
+> Result : As pvalue 1.956^{-09} < 0.05. We should reject H0. That is, risk of heart failure and gender are not related to each other
+
+
+* Based on the above result, we need to check if there is evidence of difference between the gender and risk of heart failure  
+
+  * H0: Means of Gender = Heart failure
+  * H1: Means of Gender ≠ Heart failure
+
+
+```{r}
+ttestResult <-t.test(Heart_Data$Sex,Heart_Data$HeartDisease)
+ttestResult
+```
+
+
+> Result: As pvalue 2.2^-16 < 0.05. We should reject H0. There is no evidence of a significant relation between Risk of failure and gender
+
+
+
+### (B) Linear Regression Model
+
+### Exploratory Data Analysis
+
+```{r}
+pairs(Heart_Data, lower.panel = NULL) #checking correlation between variables
+```
+
+```{r}
+cor(Heart_Data) # produces correlation between variables
+```
+
+* Include the package and data; Let’s split the data set into two parts HeartTraining and HeartTesting
+
+```{r}
+i <- sample(2, nrow(Heart_Data), replace = TRUE, prob = c(0.8, 0.2) )
+HeartTraining <- Heart_Data [i==1,]
+HeartTesting <- Heart_Data [i==2,]
+```
+
+### Multiple Linear Regression
+
+```{r}
+#Using all Attributes to construct a linear model.
+f_lm <- lm(Cholesterol~., , data=HeartTraining)
+summary(f_lm)
+```
+
+
+
+> There are 12 observations and Age,ChestPainType, ExerciseAngina,ST_Slope are all insignificant attributes. 
+
+
+* So, to remove all the insignificant attributes, we did this.
+
+```{r}
+#Interpreting the coefficients of all the attributes. And identifying insignificant attributes.
+f_lm1 <- lm(Cholesterol~.,+Sex+RestingBP+FastingBS+RestingECG+MaxHR+ExerciseAngina+Oldpeak+HeartDisease, data=HeartTraining)
+summary(f_lm1)
+```
+
+
+
+> There is improvement in Residual standard error. But there is a improvement in R-Squared value too.
+
+
+
+```{r}
+#Predict Cholestrol in HeartTesting.
+ypred <- predict(object = f_lm, data = HeartTesting)
+summary(ypred)
+```
+
+
+
+```{r warning=FALSE}
+MAE (y_pred = ypred, y_true = HeartTesting$Cholesterol)
+```
+
+```{r warning=FALSE}
+MSE (y_pred = ypred, y_true = HeartTesting$Cholesterol)
+```
+### Subset Selection Linear Regression Model
+
+#### Forward Stepwise
+
+```{r}
+intercept_only <- lm(Sex ~ 1, data = HeartTraining)
+all <- lm(Sex ~. ,data = HeartTraining)
+forward <- stepAIC(intercept_only, direction="forward", scope = formula(all))
+```
+
+```{r}
+forward$anova
+```
+
+```{r}
+summary(forward)
+```
+
+```{r}
+library(MLmetrics)
+ypre_for <- predict(forward, HeartTesting)
+MAE(y_pred =ypre_for, y_true = HeartTesting$Sex ) 
+```
+
+> There is a major improvement in mean absolute error
+
+```{r}
+MSE(y_pred = ypre_for, y_true = HeartTesting$Sex)
+```
+> There is a major improvement in mean squared error
+
+#### Backward Stepwise
+
+```{r}
+backward <- stepAIC(all, direction='backward')
+```
+
+```{r}
+backward$anova
+```
+
+```{r}
+summary(backward)
+```
+
+```{r}
+ypre_back <- predict(object = backward, newdata = HeartTesting)
+MAE (y_pred = ypre_back, y_true = HeartTesting$Sex )
+```
+
+```{r}
+MSE (y_pred = ypre_back, y_true = HeartTesting$Sex )
+```
+
+
+> Result: MAE and MSE for both forward and backward are similar. That means the application will run as intended with very minute error with better accuracy. 
+
+
+## Conclusion
+
+* As per our investigation people of age 50-60 irrespective of the gender are most likely to have the risk of heart failure. And, there is no evidence in the fact that gender is related to risk of heart failure
