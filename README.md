@@ -1,4 +1,4 @@
-# Analysis-of-Heart-Disease
+# Analysis-of-Heart-Disease (Analysis is done using RStudio)
 Analysis of heart disease is very vital according to the upcoming generation.
 Disease are rising much more and are by threatened by lives. 
 So, the purpose of choosing this dataset is to predict the rate of heart disease based on cholesterol and other 
